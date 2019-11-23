@@ -1,6 +1,7 @@
 import * as React from 'react';
 import './App.css';
 import { getNearestDepth, getNearestTime } from './api/PadiTableHelperFunctions';
+import { defaultNDLs } from './api/PadiTables';
 
 class App extends React.Component {
   constructor(props) {
@@ -8,6 +9,7 @@ class App extends React.Component {
     this.state = {
       numberOfDives: 0,
       dives: [],
+      NDL: 0,
     }
   }
 
@@ -22,6 +24,7 @@ class App extends React.Component {
         'TIME': time,
       };
       this.setState(prevState => ({ dives: [...prevState.dives, diveInfo] }));
+      this.NDL = defaultNDLs[depth];
     }
   };
 
@@ -47,23 +50,23 @@ class App extends React.Component {
       const { numberOfDives } = this.state;
       if (numberOfDives === 1) {
         return <div>
-          <label htmlFor={"depthInput"}>Depth (meters) </label>
-          <input type="number" id={"depthInput"} name={"depthInput"}/>
+          <label htmlFor={`depthInput${0}`}>Depth (meters) </label>
+          <input type="number" id={`depthInput${0}`} name={`depthInput${0}`}/>
 
-          <label htmlFor={"timeInput"}>Time (minutes) </label>
-          <input type="number" id={"timeInput"} name={"timeInput"}/>
+          <label htmlFor={`timeInput${0}`}>Time (minutes) </label>
+          <input type="number" id={`timeInput${0}`} name={`timeInput${0}`}/>
         </div>
       }
-      for (let i = 0; i < this.state.numberOfDives; i++) {
-        forms.push(<div key={i}>
-          <span>Dive #{i} </span>
-          <label htmlFor={`depthInput${i}`}>Depth (meters) </label>
-          <input type="number" id={`depthInput${i}`} name={`depthInput${i}`}/>
-
-          <label htmlFor={`timeInput${i}`}>Time (minutes) </label>
-          <input type="number" id={`timeInput${i}`} name={`timeInput${i}`}/>
-        </div>);
-      }
+      // for (let i = 0; i < this.state.numberOfDives; i++) {
+      //   forms.push(<div key={i}>
+      //     <span>Dive #{i} </span>
+      //     <label htmlFor={`depthInput${i}`}>Depth (meters) </label>
+      //     <input type="number" id={`depthInput${i}`} name={`depthInput${i}`}/>
+      //
+      //     <label htmlFor={`timeInput${i}`}>Time (minutes) </label>
+      //     <input type="number" id={`timeInput${i}`} name={`timeInput${i}`}/>
+      //   </div>);
+      // }
       return forms;
     };
 
@@ -71,8 +74,9 @@ class App extends React.Component {
       <div className="App">
         <h1><b>DISCLAIMER: THIS CODE IS FOR PROTOTYPING PURPOSES ONLY, DO NOT USE TO PLAN FOR A REAL DIVE</b></h1>
 
+
         <label htmlFor="numberOfDives"># of Dives</label>
-        <input type="number" id="numberOfDives" name="numberOfDives"/>
+        <input type="number" id="numberOfDives" name="numberOfDives" max="1" min="1"/>
         <button type="button" onClick={confirmNumberOfDives}>Plan Out Your Dive!</button>
         {
           numberOfDives > 0 &&
@@ -81,6 +85,9 @@ class App extends React.Component {
             <button type="button" onClick={planDive}>Plan Dive</button>
           </React.Fragment>
         }
+        <div>
+          No-Decompression Limit (minutes): {this.NDL}
+        </div>
       </div>
     );
   }

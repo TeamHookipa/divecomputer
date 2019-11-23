@@ -12,6 +12,20 @@ export const getNearestDepth = (depth) => {
 
 export const getNearestTime = (depth, time) => {
   const nearestDepth = getNearestDepth(depth);
+  const timesStringArray = Object.keys(table1[nearestDepth]);
+  let times = [];
+  // dunno if I need to do this but I'm doing this just in case
+  for (let t of timesStringArray) {
+    times.push(parseInt(t, 10));
+  }
+  times = times.sort();
+  let lastTimeChecked = 0;
+  for (let t of times) {
+    if (lastTimeChecked < time && time <= t) {
+      return t;
+    }
+    lastTimeChecked = t;
+  }
 };
 
 export const getPressureGroup = (depth, time) => {
