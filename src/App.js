@@ -4,6 +4,7 @@ import { getNearestDepth, getNearestTime } from './api/Utilities';
 import DiveInputForm from './components/DiveInputForm';
 import SurfaceIntervalForm from './components/SurfaceIntervalForm';
 import { Container, Grid } from 'semantic-ui-react';
+import { defaultNDLs } from './api/PadiTables';
 
 class App extends React.Component {
   constructor(props) {
@@ -17,15 +18,22 @@ class App extends React.Component {
   }
 
   setDiveInputs = () => {
+    const { numberOfDives } = this.state;
     this.setState({ flag: true });
-    for (let i = 0; i < this.state.numberOfDives; i++) {
+    for (let i = 0; i < numberOfDives; i++) {
       const depthInput = parseInt(document.getElementById(`depthInput${i}`).value, 10);
       const timeInput = parseInt(document.getElementById(`timeInput${i}`).value, 10);
       const depth = getNearestDepth(depthInput);
       const time = getNearestTime(depthInput, timeInput);
+      let ndl = 0;
+      if (numberOfDives === 1) {
+        console.log("test");
+        ndl = defaultNDLs[depth];
+      }
       const diveInfo = {
         'DEPTH': depth,
         'TIME': time,
+        'NDL': ndl,
       };
       this.setState(prevState => ({ dives: [...prevState.dives, diveInfo] }));
     }
@@ -38,9 +46,10 @@ class App extends React.Component {
       const numberOfDivesInputValue = document.getElementById("numberOfDives").value;
       if (numberOfDivesInputValue < 1) {
         window.alert("Enter at least one dive.");
-      } else if (numberOfDivesInputValue > 16) {
-        window.alert("More than 16 dives is not supported.");
-      } else {
+      } else
+        if (numberOfDivesInputValue > 8) {
+          window.alert("More than 8 dives is not supported.");
+        } else {
           this.setState({ numberOfDives: parseInt(numberOfDivesInputValue, 10) });
         }
     };
@@ -53,7 +62,11 @@ class App extends React.Component {
           <React.Fragment key={i}>
             <Grid.Column>
               <DiveInputForm index={i}/>
-              <div>NDL for Dive #{i}: {NDL[i]} minutes</div>
+              {flag ?
+                <React.Fragment>
+                  <div>NDL: {dives[i].NDL} minutes</div>
+                  <div>Pressure Group: </div>
+                </React.Fragment> : ''}
             </Grid.Column>
             <Grid.Column>
               {// Render Surface Interval Input Forms
