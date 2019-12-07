@@ -7,7 +7,7 @@ const defaultNDLs = { 10: 219, 12: 147, 14: 98, 16: 72, 18: 56, 20: 45, 22: 37, 
 
 // The topmost layer of this object represents Depth (meters)
 // For each depth is another object that contains Key-Values, with the Keys being the minutes they spent at that depth
-// and the Values being the Pressure Group for each corresponding key
+// and the Values being the Pressure Group for each corresponding index
 const table1 = {
   10: {
     '122': 'T', '178': 'X', '219': 'Z', '133': 'U', '88': 'P', '64': 'L', '112': 'S', '82': 'O',
@@ -64,6 +64,7 @@ const table1 = {
   42: { '8': 'F', '4': 'B', '7': 'E', '6': 'D' }
 };
 
+// Surface Interval Table
 const table2 = {
   'A': {
     'A': ['00:00', '03:00'], 'C': ['', ''], 'B': ['', ''], 'E': ['', ''], 'D': ['', ''],

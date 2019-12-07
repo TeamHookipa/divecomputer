@@ -1,9 +1,6 @@
 
 import React from 'react';
-import ReactDom from 'react-dom';
-import App from './App.';
-import { getNearestDepth, getNearestTime, getPressureGroup } from './api/PadiTableHelperFunctions';
-import { depths, table1 } from './PadiTables';
+import { getNearestDepth, getNearestTime, getPressureGroup } from './api/Utilities';
 
 
 //Tests getNearestDepth Function
