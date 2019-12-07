@@ -1,9 +1,15 @@
 import * as React from 'react';
 import './App.css';
-import { getNearestDepth, getNearestTime, getPressureGroup, getPressureGroupForTableTwo } from './api/Utilities';
+import {
+  getNearestDepth,
+  getNearestTime,
+  getPressureGroup,
+  getPressureGroupForTableTwo,
+  isSafetyStopRequired
+} from './api/Utilities';
 import DiveInputForm from './components/DiveInputForm';
 import SurfaceIntervalForm from './components/SurfaceIntervalForm';
-import { Container, Grid } from 'semantic-ui-react';
+import { Container, Grid, Message, Header, List } from 'semantic-ui-react';
 import { defaultNDLs, table3 } from './api/PadiTables';
 import Swal from 'sweetalert2';
 
@@ -12,7 +18,6 @@ class App extends React.Component {
     super(props);
     this.state = {
       numberOfDives: 0,
-      flag: false,
       dives: [],
       intervalInputs: [],
     }
@@ -48,6 +53,7 @@ class App extends React.Component {
           'TIME': undefined,
           'NDL': undefined,
           'INPUTSET': false,
+          'PG': undefined,
         };
         for (let i = 0; i < this.state.numberOfDives; i++) {
           this.setState(prevState => ({ dives: [...prevState.dives, initialDive] }));
@@ -87,33 +93,36 @@ class App extends React.Component {
 
   setDiveInput = (event, index) => {
     event.preventDefault();
-    const { numberOfDives, intervalInputs } = this.state;
+    const { intervalInputs } = this.state;
     let dives = [...this.state.dives];
     const dive = dives[index];
     const depthInput = dive["DEPTH"];
     const timeInput = dive["TIME"];
     const depth = getNearestDepth(depthInput);
     const time = getNearestTime(depthInput, timeInput);
-    let ndl = 0;
+    let ndl;
     if (index === 0) {
       ndl = defaultNDLs[depth];
-    } else
-      if (numberOfDives > 1 && index !== 0 && index !== (numberOfDives - 1)) {
-        const intervalInput = intervalInputs[index];
-        const startPressureGroup = getPressureGroup(depth, time);
-        const pressureGroupFromTableTwo = getPressureGroupForTableTwo(startPressureGroup, intervalInput);
-        const nextDive = dives[index + 1];
-        const nextDepthInput = nextDive["DEPTH"];
-        const nextTimeInput = nextDive["TIME"];
-        const nextDepth = getNearestDepth(nextDepthInput);
-        const nextTime = getNearestTime(nextTimeInput);
-        const rnt = table3[nextDepth][0]; // Residual Nitrogen Time
-        const andl = table3[nextDepth][1]; // Adjusted No Decompression Limit
-        ndl = andl;
-        if (numberOfDives > 2) {
-          const adjustedTime = nextTime + rnt;
-        }
-      }
+    } else {
+      const intervalInput = intervalInputs[index - 1]['VALUE'];
+      const startPressureGroup = dives[index - 1]['PG'];
+      const pressureGroupFromTableTwo = getPressureGroupForTableTwo(startPressureGroup, intervalInput);
+      const rnt = table3[depth][pressureGroupFromTableTwo][0]; // Residual Nitrogen Time
+      const andl = table3[depth][pressureGroupFromTableTwo][1]; // Adjusted No Decompression Limit
+      ndl = andl;
+    }
+    if (time > ndl) {
+      Swal.fire({
+        title: 'No Decompression Limit Exceeded',
+        icon: 'error',
+        type: 'error',
+        text: `Your TIME input of ${time} minutes for Dive ${index} has exceeded the No Decompression Limit of ${ndl} minutes!`,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        allowEnterKey: false,
+      });
+      return false;
+    }
     dives[index] = {
       'DEPTH': depth,
       'TIME': time,
@@ -130,7 +139,15 @@ class App extends React.Component {
       ...intervalInputs[index],
       'INPUTSET': true,
     };
-    this.setState({ intervalInputs });
+    let dives = [...this.state.dives];
+    const depth = dives[index]["DEPTH"];
+    const time = dives[index]["TIME"];
+    const pressureGroup = getPressureGroup(depth, time);
+    dives[index] = {
+      ...dives[index],
+      'PG': pressureGroup,
+    };
+    this.setState({ dives, intervalInputs });
   };
 
   render() {
@@ -138,12 +155,12 @@ class App extends React.Component {
 
     const renderDiveColumns = () => {
       let forms = [];
-      const { numberOfDives, dives, flag } = this.state;
+      const { numberOfDives, dives } = this.state;
       for (let i = 0; i < numberOfDives; i++) {
         forms.push(
             <React.Fragment key={i}>
               <Grid.Column>
-                <b>Dive #{i}</b>
+                <Header>Dive #{i}</Header>
                 {i === 0 ?
                     <DiveInputForm index={i} dives={dives}
                                    handleDepthChange={this.changeDepthInput}
@@ -157,18 +174,46 @@ class App extends React.Component {
                                        handleSubmit={this.setDiveInput}/>
                         : ''
                 }
-
-                {flag ?
-                    <React.Fragment>
-                      <div>NDL: {dives[i].NDL} minutes</div>
-                    </React.Fragment> : ''}
+                {(dives[i] !== undefined && dives[i]['INPUTSET']) ?
+                    <Message>
+                      <Message.Header>No Decompression Limit: </Message.Header>
+                      {dives[i].NDL} minutes
+                    </Message> : ''}
               </Grid.Column>
 
               <Grid.Column>
                 {(numberOfDives > 1 && i !== (numberOfDives - 1) && dives[i] !== undefined && dives[i]['INPUTSET']) ?
-                    <SurfaceIntervalForm index={i} dives={dives}
-                                         handleIntervalChange={this.changeIntervalInput}
-                                         handleSubmit={this.setIntervalInput}/> : ''}
+                    <React.Fragment>
+                      <Header>Surface Interval</Header>
+                      <SurfaceIntervalForm index={i} dives={dives}
+                                           handleIntervalChange={this.changeIntervalInput}
+                                           handleSubmit={this.setIntervalInput}/>
+                      {(dives[i]['DEPTH'] >= 30 || isSafetyStopRequired(dives[i]['DEPTH'], dives[i]['TIME'])) ?
+                          // TODO: Move to its own component
+                          <Message negative={true}>
+                            <Message.Header>SAFETY STOP REQUIRED AFTER DIVE #{i}</Message.Header>
+                            Safety stops are REQUIRED for dive depths of 30 meters or deeper OR if the pressure group
+                            for the dive is within three pressure groups of its no decompression limit.
+                            <List bulleted={true}>
+                              <List.Header>Dive #{i} Statistics</List.Header>
+                              <List.Item>Depth: {dives[i]['DEPTH']} meters</List.Item>
+                              <List.Item>
+                                Pressure Group Achieved: {getPressureGroup(dives[i]['DEPTH'], dives[i]['TIME'])}
+                              </List.Item>
+                              <List.Item>
+                                Pressure Group of
+                                NDL: {getPressureGroup(dives[i]['DEPTH'], defaultNDLs[dives[i]['DEPTH']])}
+                              </List.Item>
+                            </List>
+                          </Message>
+                          :
+                          <Message warning={true}>
+                            <Message.Header>Safety Stop Recommended after Dive #{i}</Message.Header>
+                            A safety stop is recommended 5 meters below surface for 3 to 5 minutes before surfacing at
+                            the end of all dives.
+                          </Message>
+                      }
+                    </React.Fragment> : ''}
               </Grid.Column>
             </React.Fragment>
         );
@@ -181,10 +226,13 @@ class App extends React.Component {
           <Container className="App">
             <h1><b>DISCLAIMER: THIS CODE IS FOR PROTOTYPING PURPOSES ONLY, DO NOT USE TO PLAN FOR A REAL DIVE</b></h1>
 
-            <label htmlFor="numberOfDives"># of Dives</label>
+            <label htmlFor="numberOfDives"><h2># of Dives </h2></label>
             <input type="number" id="numberOfDives" name="numberOfDives"/>
             <button type="button" onClick={this.initializeNumberOfDives}>Plan Out Your Dive!</button>
+            <br/><br/>
             {numberOfDives > 0 ?
+                // TODO: Rows of 6
+                // TODO: Show current pressure group
                 <React.Fragment>
                   {/* # of Columns: # of dives + # of surface interval columns */}
                   <Grid columns={numberOfDives + (numberOfDives - 1)}>

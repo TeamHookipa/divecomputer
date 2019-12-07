@@ -1,4 +1,4 @@
-import { depths, table1, table2 } from './PadiTables';
+import { defaultNDLs, depths, table1, table2 } from './PadiTables';
 // If the input depth is not one of the table depths, choose the next greatest depth from the table
 export const getNearestDepth = (depth) => {
   let lastDepthChecked = 0;
@@ -20,6 +20,7 @@ export const getNearestTime = (depth, time) => {
     }
     lastTimeChecked = t;
   }
+  return time;
 };
 
 export const getPressureGroup = (depth, time) => {
@@ -51,6 +52,16 @@ export const getPressureGroupForTableTwo = (startPressureGroup, intervalInput) =
       return pressureGroup;
     }
   }
+};
+
+export const isSafetyStopRequired = (depth, time) => {
+  const pressureGroup = getPressureGroup(depth, time);
+  const maxPressureGroup = getPressureGroup(depth, defaultNDLs[depth]);
+  const asciiPG = pressureGroup.charCodeAt(0);
+  const asciiMPG = maxPressureGroup.charCodeAt(0);
+  const lowerBound = asciiMPG - 3;
+  return lowerBound <= asciiPG && asciiPG <= asciiMPG;
+
 };
 
 // TODO: Minimum Surface Interval

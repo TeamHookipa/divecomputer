@@ -14,7 +14,7 @@ class SurfaceIntervalForm extends React.Component {
                 required={true}
                 onChange={(event, value) => handleIntervalChange(event, value, index)}
             />
-            <Form.Button content={`Set Surface Interval`}/>
+            <Form.Button color={`black`} content={`Set Surface Interval`}/>
           </Form>
         </React.Fragment>
     );

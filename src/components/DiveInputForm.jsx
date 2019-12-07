@@ -18,7 +18,7 @@ class DiveInputForm extends React.Component {
                 required={true}
                 onChange={(event, value) => handleTimeChange(event, value, index)}
             />
-            <Form.Button content={`Set Dive #${index}`}/>
+            <Form.Button color={`black`} content={`Set Dive #${index}`}/>
           </Form>
         </React.Fragment>
     );

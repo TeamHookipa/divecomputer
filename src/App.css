@@ -1,5 +1,9 @@
 .main {
-  background-image: linear-gradient(#00bfff, #0e00ff);
+  background-image: linear-gradient(#00bfff, #001aff);
+}
+
+html, body, #root, #root>div {
+  height: 100%;
 }
 
 .App {
