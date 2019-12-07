@@ -1,9 +1,9 @@
 import * as React from 'react';
 import './App.css';
-import { getNearestDepth, getNearestTime, getPressureGroupForTableTwo, getPressureGroup } from './api/Utilities';
+import { getNearestDepth, getNearestTime, getPressureGroup, getPressureGroupForTableTwo } from './api/Utilities';
 import DiveInputForm from './components/DiveInputForm';
 import SurfaceIntervalForm from './components/SurfaceIntervalForm';
-import { Button, Container, Grid, Input } from 'semantic-ui-react';
+import { Container, Grid } from 'semantic-ui-react';
 import { defaultNDLs, table3 } from './api/PadiTables';
 import Swal from 'sweetalert2';
 
@@ -14,7 +14,7 @@ class App extends React.Component {
       numberOfDives: 0,
       flag: false,
       dives: [],
-      NDL: [],
+      intervalInputs: [],
     }
   }
 
@@ -47,6 +47,7 @@ class App extends React.Component {
           'DEPTH': undefined,
           'TIME': undefined,
           'NDL': undefined,
+          'INPUTSET': false,
         };
         for (let i = 0; i < this.state.numberOfDives; i++) {
           this.setState(prevState => ({ dives: [...prevState.dives, initialDive] }));
@@ -58,50 +59,82 @@ class App extends React.Component {
     event.preventDefault();
     let dives = [...this.state.dives];
     dives[index] = {
+      ...dives[index],
       'DEPTH': parseInt(value, 10),
     };
     this.setState({ dives });
   };
 
-  setDiveInputs = () => {
-    const { numberOfDives } = this.state;
-    this.setState({ flag: true });
-    for (let i = 0; i < numberOfDives; i++) {
-      const depthInput = parseInt(document.getElementById(`depthInput${i}`).value, 10);
-      const timeInput = parseInt(document.getElementById(`timeInput${i}`).value, 10);
-      const depth = getNearestDepth(depthInput);
-      const time = getNearestTime(depthInput, timeInput);
-      let ndl = 0;
-      if (numberOfDives === 1 && i === 0) {
-        ndl = defaultNDLs[depth];
-      } else
-        if (numberOfDives > 1 && i !== (numberOfDives - 1)) {
-          const intervalInput = parseInt(document.getElementById(`intervalInput${i}`).value, 10);
-          const startPressureGroup = getPressureGroup(depth, time);
-          const pressureGroupFromTableTwo = getPressureGroupForTableTwo(startPressureGroup, intervalInput);
-          const nextDepthInput = parseInt(document.getElementById(`depthInput${i + 1}`).value, 10);
-          const nextTimeInput = parseInt(document.getElementById(`timeInput${i + 1}`).value, 10);
-          const nextDepth = getNearestDepth(nextDepthInput);
-          const nextTime = getNearestTime(nextTimeInput);
-          const rnt = table3[nextDepth][0]; // Residual Nitrogen Time
-          const andl = table3[nextDepth][1]; // Adjusted No Decompression Limit
-          ndl = andl;
-          console.log('ndl ', ndl);
-          if (numberOfDives > 2) {
-            const adjustedTime = nextTime + rnt;
-          }
+  changeTimeInput = (event, { value }, index) => {
+    event.preventDefault();
+    let dives = [...this.state.dives];
+    dives[index] = {
+      ...dives[index],
+      'TIME': parseInt(value, 10),
+    };
+    this.setState({ dives });
+  };
+
+  changeIntervalInput = (event, { value }, index) => {
+    event.preventDefault();
+    let intervalInputs = [...this.state.intervalInputs];
+    intervalInputs[index] = {
+      ...intervalInputs[index],
+      'VALUE': parseInt(value, 10),
+    };
+    this.setState({ intervalInputs });
+  };
+
+  setDiveInput = (event, index) => {
+    event.preventDefault();
+    const { numberOfDives, intervalInputs } = this.state;
+    let dives = [...this.state.dives];
+    const dive = dives[index];
+    const depthInput = dive["DEPTH"];
+    const timeInput = dive["TIME"];
+    const depth = getNearestDepth(depthInput);
+    const time = getNearestTime(depthInput, timeInput);
+    let ndl = 0;
+    if (index === 0) {
+      ndl = defaultNDLs[depth];
+    } else
+      if (numberOfDives > 1 && index !== 0 && index !== (numberOfDives - 1)) {
+        const intervalInput = intervalInputs[index];
+        const startPressureGroup = getPressureGroup(depth, time);
+        const pressureGroupFromTableTwo = getPressureGroupForTableTwo(startPressureGroup, intervalInput);
+        const nextDive = dives[index + 1];
+        const nextDepthInput = nextDive["DEPTH"];
+        const nextTimeInput = nextDive["TIME"];
+        const nextDepth = getNearestDepth(nextDepthInput);
+        const nextTime = getNearestTime(nextTimeInput);
+        const rnt = table3[nextDepth][0]; // Residual Nitrogen Time
+        const andl = table3[nextDepth][1]; // Adjusted No Decompression Limit
+        ndl = andl;
+        if (numberOfDives > 2) {
+          const adjustedTime = nextTime + rnt;
         }
-      const diveInfo = {
-        'DEPTH': depth,
-        'TIME': time,
-        'NDL': ndl,
-      };
-      this.setState(prevState => ({ dives: [...prevState.dives, diveInfo] }));
-    }
+      }
+    dives[index] = {
+      'DEPTH': depth,
+      'TIME': time,
+      'NDL': ndl,
+      'INPUTSET': true,
+    };
+    this.setState({ dives });
+  };
+
+  setIntervalInput = (event, index) => {
+    event.preventDefault();
+    let intervalInputs = [...this.state.intervalInputs];
+    intervalInputs[index] = {
+      ...intervalInputs[index],
+      'INPUTSET': true,
+    };
+    this.setState({ intervalInputs });
   };
 
   render() {
-    const { numberOfDives, dives } = this.state;
+    const { numberOfDives, intervalInputs } = this.state;
 
     const renderDiveColumns = () => {
       let forms = [];
@@ -110,19 +143,32 @@ class App extends React.Component {
         forms.push(
             <React.Fragment key={i}>
               <Grid.Column>
-                <DiveInputForm index={i} dives={dives} handleDepthChange={this.changeDepthInput}
-                               handleSubmit={this.setDiveInputs}/>
+                <b>Dive #{i}</b>
+                {i === 0 ?
+                    <DiveInputForm index={i} dives={dives}
+                                   handleDepthChange={this.changeDepthInput}
+                                   handleTimeChange={this.changeTimeInput}
+                                   handleSubmit={this.setDiveInput}/>
+                    :
+                    (dives[i - 1] !== undefined && dives[i - 1]['INPUTSET'] && intervalInputs[i - 1] !== undefined && intervalInputs[i - 1]['INPUTSET']) ?
+                        <DiveInputForm index={i} dives={dives}
+                                       handleDepthChange={this.changeDepthInput}
+                                       handleTimeChange={this.changeTimeInput}
+                                       handleSubmit={this.setDiveInput}/>
+                        : ''
+                }
+
                 {flag ?
                     <React.Fragment>
                       <div>NDL: {dives[i].NDL} minutes</div>
                     </React.Fragment> : ''}
               </Grid.Column>
+
               <Grid.Column>
-                {// Render Surface Interval Input Forms
-                  (numberOfDives > 1 && i !== (numberOfDives - 1)) ?
-                      <SurfaceIntervalForm index={i}/>
-                      : ''
-                }
+                {(numberOfDives > 1 && i !== (numberOfDives - 1) && dives[i] !== undefined && dives[i]['INPUTSET']) ?
+                    <SurfaceIntervalForm index={i} dives={dives}
+                                         handleIntervalChange={this.changeIntervalInput}
+                                         handleSubmit={this.setIntervalInput}/> : ''}
               </Grid.Column>
             </React.Fragment>
         );
@@ -144,7 +190,6 @@ class App extends React.Component {
                   <Grid columns={numberOfDives + (numberOfDives - 1)}>
                     {renderDiveColumns()}
                   </Grid>
-                  <button type="button" onClick={this.setDiveInputs}>Set Dive</button>
                 </React.Fragment> : ''
             }
           </Container>
