@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { getNearestDepth, getNearestTime, getPressureGroup } from './api/Utilities';
+import { getNearestDepth, getNearestTime, getPressureGroup, parseTimeString, getPressureGroupForTableTwo, getStartPressureGroupForMinimumSurfaceInterval, getMinimumSurfaceInterval, isSafetyStopRequired } from './api/Utilities';
 
 
 //Tests getNearestDepth Function
@@ -24,7 +24,7 @@ it('Correctly computes and returns Pressure group', () => {
 //Tests for parseTimeString
 //Checks if returns correct value for converting a format of HH:MM to minutes
 it('Correctly converts hours:minutes into minutes format', () => {
-  expect(parseTimeString("10:05")).toBe(65);
+  expect(parseTimeString("10:05")).toBe(605);
 });
 
 //Tests for getPressureGroupForTableTwo
@@ -39,15 +39,15 @@ it('Correctly returns the second pressure group', () => {
 //Tests for getStartPressureGroupForMinimumSurfaceInterval
 //Checks to see if it calculates correct minimum surface Interval and returns correct group
 it('Correctly calculates the pressure group for a given minimum surface interval', () => {
-  expect(getStartPressureGroupForMinimumSurfaceInterval(20, 26)).toBe('K');
+  expect(getStartPressureGroupForMinimumSurfaceInterval(20, 26)).toBe('F');
 });
 
 //Tests that getMinimumSurfaceInterval returns correct value
 it('Correctly calculates minimum surface interval', () => {
-  expect(getStartPressureGroupForMinimumSurfaceInterval('B',20,26)).toBe(0);
+  expect(getMinimumSurfaceInterval('B',20,26)).toBe(0);
 });
 it('Correctly calculates minimum surface interval', () => {
-  expect(getStartPressureGroupForMinimumSurfaceInterval('L',20,26)).toBe(5);
+  expect(getMinimumSurfaceInterval('L',20,26)).toBe(35);
 });
 
 //Tests if isSafetyStopRequired returns correct value
