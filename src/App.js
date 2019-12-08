@@ -9,7 +9,7 @@ import {
 } from './api/Utilities';
 import DiveInputForm from './components/DiveInputForm';
 import SurfaceIntervalForm from './components/SurfaceIntervalForm';
-import { Container, Grid, Message, Header, List, Segment } from 'semantic-ui-react';
+import { Container, Grid, Message, Header, List, Segment, Modal, Table } from 'semantic-ui-react';
 import { defaultNDLs, table3 } from './api/PadiTables';
 import Swal from 'sweetalert2';
 
@@ -153,6 +153,51 @@ class App extends React.Component {
   render() {
     const { numberOfDives, intervalInputs } = this.state;
 
+    const DiveOverviewTable = () => (
+      <Table celled>
+        <Table.Header>
+          <Table.Row>
+            <Table.HeaderCell>Dive #</Table.HeaderCell>
+            <Table.HeaderCell>Depth</Table.HeaderCell>
+            <Table.HeaderCell>Time</Table.HeaderCell>
+            <Table.HeaderCell>NDL</Table.HeaderCell>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+         {renderDiveTable()}
+        </Table.Body>
+      </Table>
+    )
+
+    const renderDiveTable = () => {
+        let cells = [];
+        const { numberOfDives, dives } = this.state;
+        for (let i = 0; i < numberOfDives; i++) {
+            cells.push(
+                <React.Fragment key={i}>
+                    {numberOfDives > 0 ?
+                          <Table.Row>
+                          <Table.Cell>{i + 1}</Table.Cell>
+                          <Table.Cell>{dives[i]["DEPTH"]} meters</Table.Cell>
+                          <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
+                          <Table.Cell>{dives[i]["NDL"]} minutes</Table.Cell>
+                          </Table.Row>
+                    : ' '}
+                </React.Fragment>
+            )
+        }
+        return cells;
+    }
+
+    const DiveOverviewModal = () => (
+      <Modal trigger={<button type="button">Dive Overview</button>} centered={false}>
+        <Modal.Header>Dive Overview</Modal.Header>
+        <Modal.Content>
+            <DiveOverviewTable/>
+        </Modal.Content>
+      </Modal>
+    )
+
     const renderDiveColumns = () => {
       let forms = [];
       const { numberOfDives, dives } = this.state;
@@ -231,6 +276,8 @@ class App extends React.Component {
             <label htmlFor="numberOfDives"><h2># of Dives </h2></label>
             <input type="number" id="numberOfDives" name="numberOfDives"/>
             <button type="button" onClick={this.initializeNumberOfDives}>Plan Out Your Dive!</button>
+            <br/><br/>
+            <DiveOverviewModal/>
             <br/><br/>
             {numberOfDives > 0 ?
                 // TODO: Rows of 6
