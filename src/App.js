@@ -35,17 +35,17 @@ class App extends React.Component {
         allowEscapeKey: false,
         allowEnterKey: false,
       });
-    } else
-      if (numberOfDivesInputValue > 8) {
-        Swal.fire({
-          title: 'Invalid Number of Dives',
-          icon: 'error',
-          type: 'error',
-          text: 'More than 8 number of dives is not supported',
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-          allowEnterKey: false,
-        });
+//    } else
+//      if (numberOfDivesInputValue > 8) {
+//        Swal.fire({
+//          title: 'Invalid Number of Dives',
+//          icon: 'error',
+//          type: 'error',
+//          text: 'More than 8 number of dives is not supported',
+//          allowOutsideClick: false,
+//          allowEscapeKey: false,
+//          allowEnterKey: false,
+//        });
       } else {
         this.setState({ numberOfDives: numberOfDivesInputValue });
         let initialDive = {
@@ -284,7 +284,7 @@ class App extends React.Component {
                 // TODO: Show current pressure group
                 <React.Fragment>
                   {/* # of Columns: # of dives + # of surface interval columns */}
-                  <Segment style={{overflow:'scroll', maxHeight: 750, background: '#00bfff' }}>
+                  <Segment style={{overflow:'scroll', maxHeight: 600, background: '#00bfff' }}>
                   <Grid columns={2}>
                     {renderDiveColumns()}
                   </Grid>
