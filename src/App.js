@@ -204,7 +204,12 @@ class App extends React.Component {
                                        handleSubmit={this.setDiveInput}/>
                         : ''
                 }
-                {(dives[i] !== undefined && dives[i]['INPUTSET']) ?
+                {// Only God knows how the fuck I even came up with this monstrosity of a conditional statement - Gian
+                  (
+                    (dives[i] !== undefined && dives[i]['INPUTSET'] && intervalInputs[i - 1] !== undefined && intervalInputs[i - 1]['INPUTSET'])
+                    ||
+                    (dives[i] !== undefined && i === (numberOfDives - 1) && intervalInputs[i - 1] !== undefined && intervalInputs[i - 1]['INPUTSET'])
+                ) ?
                     <Message>
                       <Message.Header>No Decompression Limit: </Message.Header>
                       {dives[i].NDL} minutes
@@ -219,7 +224,6 @@ class App extends React.Component {
                                            handleIntervalChange={this.changeIntervalInput}
                                            handleSubmit={this.setIntervalInput}/>
                       {(dives[i]['DEPTH'] >= 30 || isSafetyStopRequired(dives[i]['DEPTH'], dives[i]['TIME'])) ?
-                          // TODO: Move to its own component
                           <Message negative={true}>
                             <Message.Header>SAFETY STOP REQUIRED AFTER DIVE #{i}</Message.Header>
                             Safety stops are REQUIRED for dive depths of 30 meters or deeper OR if the pressure group
@@ -262,8 +266,6 @@ class App extends React.Component {
               <button type="button" onClick={this.initializeNumberOfDives}>Plan Out Your Dive!</button>
             </div>
             {numberOfDives > 0 ?
-                // TODO: Rows of 6
-                // TODO: Show current pressure group
                 <React.Fragment>
                   {/* # of Columns: # of dives + # of surface interval columns */}
                   <Grid columns={numberOfDives + (numberOfDives - 1)}>
