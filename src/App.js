@@ -5,14 +5,15 @@ import {
   getNearestDepth,
   getNearestTime,
   getPressureGroup,
-  getPressureGroupForTableTwo,
+  getPressureGroupForTableTwo, isDefined,
   isSafetyStopRequired
 } from './api/Utilities';
 import DiveInputForm from './components/DiveInputForm';
 import SurfaceIntervalForm from './components/SurfaceIntervalForm';
-import { Container, Grid, Message, Header, List } from 'semantic-ui-react';
+import { Container, Grid, Message, Header } from 'semantic-ui-react';
 import { defaultNDLs, table3 } from './api/PadiTables';
 import Swal from 'sweetalert2';
+import SafetyStopIndicator from './components/SafetyStopIndicator';
 
 class App extends React.Component {
   constructor(props) {
@@ -225,17 +226,15 @@ class App extends React.Component {
                                    handleTimeChange={this.changeTimeInput}
                                    handleSubmit={this.setDiveInput}/>
                     :
-                    (dives[i - 1] !== undefined && dives[i - 1]['INPUTSET']) ?
+                    (isDefined(dives[i - 1]) && dives[i - 1]['INPUTSET']) ?
                         <DiveInputForm index={i} dives={dives}
                                        handleDepthChange={this.changeDepthInput}
                                        handleTimeChange={this.changeTimeInput}
-                                       handleSubmit={this.setDiveInput}/>
-                        : ''
-                }
+                                       handleSubmit={this.setDiveInput}/> : ''}
                 {(
-                    (dives[i] !== undefined && dives[i]['INPUTSET'])
+                    (isDefined(dives[i]) && dives[i]['INPUTSET'])
                     ||
-                    (dives[i] !== undefined && i === (numberOfDives - 1) && intervalInputs[i - 1] !== undefined && intervalInputs[i - 1]['INPUTSET'])
+                    (isDefined(dives[i]) && i === (numberOfDives - 1) && isDefined(intervalInputs[i - 1]) && intervalInputs[i - 1]['INPUTSET'])
                 ) ?
                     <Message>
                       <Message.Header>No Decompression Limit: </Message.Header>
@@ -248,42 +247,22 @@ class App extends React.Component {
                             {dives[i]['RNT']} minutes
                             <Message.Header>Actual Bottom Time:</Message.Header>
                             {dives[i]['TIME']} minutes
-                          </React.Fragment>
-                          : ''}
+                          </React.Fragment> : ''}
                     </Message> : ''}
               </Grid.Column>
 
               <Grid.Column>
-                {(numberOfDives > 1 && i !== (numberOfDives - 1) && dives[i] !== undefined && dives[i]['INPUTSET']) ?
+                {(numberOfDives > 1 && i !== (numberOfDives - 1) && isDefined(dives[i]) && dives[i]['INPUTSET']) ?
                     <React.Fragment>
                       <Header>Surface Interval</Header>
                       <SurfaceIntervalForm index={i} dives={dives}
                                            handleIntervalChange={this.changeIntervalInput}
                                            handleSubmit={this.setIntervalInput}/>
-                      {(dives[i]['DEPTH'] >= 30 || isSafetyStopRequired(dives[i]['DEPTH'], dives[i]['TIME'])) ?
-                          <Message negative={true}>
-                            <Message.Header>SAFETY STOP REQUIRED AFTER DIVE #{i}</Message.Header>
-                            Safety stops are REQUIRED for dive depths of 30 meters or deeper OR if the pressure group
-                            for the dive is within three pressure groups of its no decompression limit.
-                            <List bulleted={true}>
-                              <List.Header>Dive #{i} Statistics</List.Header>
-                              <List.Item>Depth: {dives[i]['DEPTH']} meters</List.Item>
-                              <List.Item>
-                                Pressure Group Achieved: {getPressureGroup(dives[i]['DEPTH'], dives[i]['TIME'])}
-                              </List.Item>
-                              <List.Item>
-                                Pressure Group of
-                                NDL: {getPressureGroup(dives[i]['DEPTH'], defaultNDLs[dives[i]['DEPTH']])}
-                              </List.Item>
-                            </List>
-                          </Message>
-                          :
-                          <Message warning={true}>
-                            <Message.Header>Safety Stop Recommended after Dive #{i}</Message.Header>
-                            A safety stop is recommended 5 meters below surface for 3 to 5 minutes before surfacing at
-                            the end of all dives.
-                          </Message>
-                      }
+                      {isSafetyStopRequired(dives[i]['DEPTH'], dives[i]['TIME']) ?
+                          <SafetyStopIndicator index={i} depth={dives[i]['DEPTH']} time={dives[i]['TIME']}
+                                               isNegative={true}/> :
+                          <SafetyStopIndicator index={i} depth={dives[i]['DEPTH']} time={dives[i]['TIME']}
+                                               isNegative={false}/>}
                     </React.Fragment> : ''}
               </Grid.Column>
             </React.Fragment>
