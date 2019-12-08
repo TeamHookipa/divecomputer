@@ -1,5 +1,7 @@
 import { defaultNDLs, depths, table1, table2, table3 } from './PadiTables';
 
+export const isDefined = (element) => element !== undefined;
+
 // If the input depth is not one of the table depths, choose the next greatest depth from the table
 export const getNearestDepth = (depth) => {
   let lastDepthChecked = 0;
@@ -97,6 +99,3 @@ export const isSafetyStopRequired = (depth, time) => {
   return lowerBound <= asciiPG && asciiPG <= asciiMPG;
 
 };
-
-// TODO: Minimum Surface Interval
-// TODO: Required Safety Stop
