@@ -14,14 +14,26 @@ import { Container, Grid, Message, Header } from 'semantic-ui-react';
 import { defaultNDLs, table3 } from './api/PadiTables';
 import Swal from 'sweetalert2';
 import SafetyStopIndicator from './components/SafetyStopIndicator';
+import NumberOfDivesInputForm from './components/NumberOfDivesInputForm';
 
 class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       numberOfDives: 0,
+      numberOfDivesFlag: false,
       dives: [],
+      // Dive Object Schema:
+      // 'DEPTH': Number,
+      // 'TIME': Number,
+      // 'NDL': Number,
+      // 'RNT': Number,
+      // 'INPUTSET': Boolean,
+      // 'PG': String,
       intervalInputs: [],
+      // Multiple Dives Rule
+      oneHourMinSurfaceIntervalFlag: false,
+      threeHourMinSurfaceIntervalFlag: false,
     }
   }
 
@@ -29,9 +41,16 @@ class App extends React.Component {
   // UI purposes, this should not be used for any functionality as it will mess up the logic very badly.
   incrementIndex = (index) => index + 1;
 
-  initializeNumberOfDives = () => {
-    const numberOfDivesInputValue = parseInt(document.getElementById("numberOfDives").value, 10);
-    if (numberOfDivesInputValue < 1) {
+  changeNumberOfDives = (event, { value }) => {
+    event.preventDefault();
+    this.setState({ numberOfDives: parseInt(value, 10) });
+  };
+
+  setNumberOfDives = (event) => {
+    event.preventDefault();
+    const { numberOfDives } = this.state;
+    this.setState({ numberOfDivesFlag: true });
+    if (numberOfDives < 1) {
       Swal.fire({
         title: 'Invalid Number of Dives',
         icon: 'error',
@@ -42,7 +61,7 @@ class App extends React.Component {
         allowEnterKey: false,
       });
     } else
-      if (numberOfDivesInputValue > 8) {
+      if (numberOfDives > 8) {
         Swal.fire({
           title: 'Invalid Number of Dives',
           icon: 'error',
@@ -53,21 +72,9 @@ class App extends React.Component {
           allowEnterKey: false,
         });
       } else {
-        this.setState({ numberOfDives: numberOfDivesInputValue });
-        // This doesn't really work for whatever reason, but I just put it here to serve as a schema documentation for the dive object
-        let initialDive = {
-          'DEPTH': undefined,
-          'TIME': undefined,
-          'NDL': undefined,
-          'RNT': undefined,
-          'INPUTSET': false,
-          'PG': undefined,
-        };
-        for (let i = 0; i < this.state.numberOfDives; i++) {
-          this.setState(prevState => ({ dives: [...prevState.dives, initialDive] }));
-        }
-        document.getElementById("numberOfDivesInput").style.display = "none";
+        this.setState({ numberOfDives: numberOfDives });
       }
+    document.getElementById("numberOfDivesInputForm").style.display = "none";
   };
 
   changeDepthInput = (event, { value }, index) => {
@@ -102,11 +109,58 @@ class App extends React.Component {
 
   setDiveInput = (event, index) => {
     event.preventDefault();
+    // Multiple Dives Rule
+    // If Pressure Group is W or X, all subsequent dives must have a minimum surface interval of 60 minutes
+    // If Pressure Group is Y or Z, all subsequent dives must have a minimum surface interval of 180 minutes
     let dives = [...this.state.dives];
+    if (index !== 0) {
+      const prevDive = dives[index - 1];
+      const prevDepth = prevDive["DEPTH"];
+      const prevTime = prevDive["TIME"];
+      const pressureGroupOfPrevDive = getPressureGroup(prevDepth, prevTime);
+      if (pressureGroupOfPrevDive === 'W' || pressureGroupOfPrevDive === 'X') {
+        this.setState({ oneHourMinSurfaceIntervalFlag: true });
+
+      } else
+        if (pressureGroupOfPrevDive === 'Y' || pressureGroupOfPrevDive === 'Z') {
+          this.setState({ threeHourMinSurfaceIntervalFlag: true });
+        }
+    }
+
     const dive = dives[index];
     const depthInput = dive["DEPTH"];
     const timeInput = dive["TIME"];
     const depth = getNearestDepth(depthInput);
+    if (index !== 0) {
+      // Multiple Dives Rule: Limit all repetitive dives to 30 meters or less
+      if (depth > 30) {
+        Swal.fire({
+          title: 'Multiple Dives Rule',
+          icon: 'error',
+          type: 'error',
+          text: 'Repetitive dives are limited to 30 meters or less',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          allowEnterKey: false,
+        });
+        return false;
+      }
+      // Multiple Dives Rule: Repetitive dives should be the same or lesser depth than the dive preceding
+      if (depth > dives[index - 1]['DEPTH']) {
+        Swal.fire({
+          title: 'Multiple Dives Rule',
+          icon: 'error',
+          type: 'error',
+          html: `<p>Repetitive dives should be the same or a lesser depth than the dive preceding</p>
+                 <p>Dive #${index} Depth: ${depth} meters</p>
+                 <p>Dive #${index - 1} Depth: ${dives[index - 1]['DEPTH']}</p>`,
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          allowEnterKey: false,
+        });
+        return false;
+      }
+    }
     const time = getNearestTime(depthInput, timeInput);
     let ndl;
     if (index === 0) { // Only in the first dive we calculate the NDL here rather than in setIntervalInput()
@@ -147,7 +201,17 @@ class App extends React.Component {
     const pressureGroupOfPrevDive = getPressureGroup(prevDepth, prevTime);
     const nextDepth = dives[index + 1]['DEPTH'];
     const nextTime = dives[index + 1]['TIME'];
-    const minSurfaceInterval = getMinimumSurfaceInterval(pressureGroupOfPrevDive, nextDepth, nextTime);
+    const { oneHourMinSurfaceIntervalFlag, threeHourMinSurfaceIntervalFlag } = this.state;
+    let minSurfaceInterval;
+    if (oneHourMinSurfaceIntervalFlag) {
+      minSurfaceInterval = 60;
+    } else
+      if (threeHourMinSurfaceIntervalFlag) {
+        minSurfaceInterval = 180
+      } else {
+        minSurfaceInterval = getMinimumSurfaceInterval(pressureGroupOfPrevDive, nextDepth, nextTime);
+      }
+    console.log('minSurfaceInterval ', minSurfaceInterval);
     let intervalInputs = [...this.state.intervalInputs];
     if (intervalInputs[index]['VALUE'] < minSurfaceInterval) {
       Swal.fire({
@@ -210,7 +274,7 @@ class App extends React.Component {
   };
 
   render() {
-    const { numberOfDives, intervalInputs } = this.state;
+    const { numberOfDives, intervalInputs, numberOfDivesFlag } = this.state;
 
     const renderDiveColumns = () => {
       let forms = [];
@@ -221,13 +285,13 @@ class App extends React.Component {
               <Grid.Column>
                 <Header>Dive #{i}</Header>
                 {i === 0 ?
-                    <DiveInputForm index={i} dives={dives}
+                    <DiveInputForm index={i}
                                    handleDepthChange={this.changeDepthInput}
                                    handleTimeChange={this.changeTimeInput}
                                    handleSubmit={this.setDiveInput}/>
                     :
                     (isDefined(dives[i - 1]) && dives[i - 1]['INPUTSET']) ?
-                        <DiveInputForm index={i} dives={dives}
+                        <DiveInputForm index={i}
                                        handleDepthChange={this.changeDepthInput}
                                        handleTimeChange={this.changeTimeInput}
                                        handleSubmit={this.setDiveInput}/> : ''}
@@ -274,21 +338,19 @@ class App extends React.Component {
     return (
         <div className="main">
           <Container className="App">
-            <h1><b>DISCLAIMER: THIS CODE IS FOR PROTOTYPING PURPOSES ONLY, DO NOT USE TO PLAN FOR A REAL DIVE</b></h1>
-
-            <div id="numberOfDivesInput">
-              <label htmlFor="numberOfDives"><h2># of Dives </h2></label>
-              <input type="number" id="numberOfDives" name="numberOfDives"/>
-              <button type="button" onClick={this.initializeNumberOfDives}>Plan Out Your Dive!</button>
-            </div>
-            {numberOfDives > 0 ?
+            <br/>
+            <Message icon={'warning sign'}
+                     negative={true}
+                     header={'DISCLAIMER: THIS CODE IS FOR PROTOTYPING PURPOSES ONLY, DO NOT USE TO PLAN FOR A REAL DIVE'}/>
+            <NumberOfDivesInputForm handleNumberOfDiveChange={this.changeNumberOfDives}
+                                    handleSubmit={this.setNumberOfDives}/>
+            {numberOfDivesFlag ?
                 <React.Fragment>
                   {/* # of Columns: # of dives + # of surface interval columns */}
                   <Grid columns={numberOfDives + (numberOfDives - 1)}>
                     {renderDiveColumns()}
                   </Grid>
-                </React.Fragment> : ''
-            }
+                </React.Fragment> : ''}
           </Container>
         </div>
     );

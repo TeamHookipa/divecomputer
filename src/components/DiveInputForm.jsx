@@ -4,10 +4,10 @@ import { Form } from 'semantic-ui-react';
 
 class DiveInputForm extends React.Component {
   render() {
-    const { index, dives, handleDepthChange, handleTimeChange, handleSubmit } = this.props;
+    const { index, handleDepthChange, handleTimeChange, handleSubmit } = this.props;
     return (
         <React.Fragment>
-          <Form onSubmit={(event, data) => handleSubmit(event, index)}>
+          <Form onSubmit={(event) => handleSubmit(event, index)}>
             <Form.Input
                 placeholder={'Depth (meters)'}
                 required={true}
@@ -27,7 +27,6 @@ class DiveInputForm extends React.Component {
 
 DiveInputForm.propTypes = {
   index: PropTypes.number.isRequired,
-  dives: PropTypes.array.isRequired,
   handleDepthChange: PropTypes.func.isRequired,
   handleTimeChange: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
