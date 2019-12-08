@@ -1,4 +1,7 @@
-import { defaultNDLs, depths, table1, table2 } from './PadiTables';
+import { defaultNDLs, depths, table1, table2, table3 } from './PadiTables';
+
+export const isDefined = (element) => element !== undefined;
+
 // If the input depth is not one of the table depths, choose the next greatest depth from the table
 export const getNearestDepth = (depth) => {
   let lastDepthChecked = 0;
@@ -10,6 +13,7 @@ export const getNearestDepth = (depth) => {
   }
 };
 
+// If the input depth is not one of the table times, choose the next greatest time from the table in a given depth
 export const getNearestTime = (depth, time) => {
   const nearestDepth = getNearestDepth(depth);
   const times = Object.keys(table1[nearestDepth]);
@@ -23,12 +27,14 @@ export const getNearestTime = (depth, time) => {
   return time;
 };
 
+// Return the pressure group given the depth and time
 export const getPressureGroup = (depth, time) => {
   const nearestDepth = getNearestDepth(depth);
   const nearestTime = getNearestTime(depth, time);
   return table1[nearestDepth][nearestTime];
 };
 
+// Parse the time strings of table2 (Surface Interval Table) from 'HH:MM' format into a minutes int value.
 export const parseTimeString = (string) => {
   const split = string.split(':');
   const hours = parseInt(split[0], 10);
@@ -37,6 +43,7 @@ export const parseTimeString = (string) => {
   return hoursToMinutes + remainingMinutes;
 };
 
+// Given the pressure group calculated from Table 1, get the pressure group for Table 2 based on the interval input
 export const getPressureGroupForTableTwo = (startPressureGroup, intervalInput) => {
   if (intervalInput >= 180) { // greater than 3 hours
     return 'A';
@@ -45,7 +52,7 @@ export const getPressureGroupForTableTwo = (startPressureGroup, intervalInput) =
   const nextPossiblePressureGroups = Object.keys(surfaceIntervals);
   for (let pressureGroup of nextPossiblePressureGroups) {
     const interval = surfaceIntervals[pressureGroup];
-    if (interval[0] === "" || interval[1] === "") continue;
+    if (interval[0] === "" || interval[1] === "") continue; // Ignore the empty interval arrays
     const firstIntervalToMinutes = parseTimeString(interval[0]);
     const secondIntervalToMinutes = parseTimeString((interval[1]));
     if (firstIntervalToMinutes <= intervalInput && intervalInput <= secondIntervalToMinutes) {
@@ -54,7 +61,36 @@ export const getPressureGroupForTableTwo = (startPressureGroup, intervalInput) =
   }
 };
 
+// ## Calculating Minimum Surface Interval ## //
+export const getStartPressureGroupForMinimumSurfaceInterval = (depth, time) => {
+  const nearestDepth = getNearestDepth(depth);
+  const maximumTimes = table3[nearestDepth];
+  const pressureGroupKeys = Object.keys(maximumTimes);
+  for (let pressureGroup of pressureGroupKeys) {
+    const andl = maximumTimes[pressureGroup][1];
+    if (time > andl) {
+      // continue
+    } else {
+      return pressureGroup;
+    }
+  }
+};
+
+export const getSurfaceInterval = (initialPressureGroup, finalPressureGroup) => table2[initialPressureGroup][finalPressureGroup];
+
+export const getMinimumSurfaceInterval = (prevPressureGroup, depth, time) => {
+  const startPressureGroup = getStartPressureGroupForMinimumSurfaceInterval(depth, time);
+  if (prevPressureGroup < startPressureGroup) {
+    return 0;
+  }
+  const surfaceInterval = getSurfaceInterval(prevPressureGroup, startPressureGroup);
+  return parseTimeString(surfaceInterval[0]);
+};
+
+// ########################################## //
+
 export const isSafetyStopRequired = (depth, time) => {
+  if (depth >= 30) return true;
   const pressureGroup = getPressureGroup(depth, time);
   const maxPressureGroup = getPressureGroup(depth, defaultNDLs[depth]);
   const asciiPG = pressureGroup.charCodeAt(0);
@@ -63,6 +99,3 @@ export const isSafetyStopRequired = (depth, time) => {
   return lowerBound <= asciiPG && asciiPG <= asciiMPG;
 
 };
-
-// TODO: Minimum Surface Interval
-// TODO: Required Safety Stop
