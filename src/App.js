@@ -9,7 +9,7 @@ import {
 } from './api/Utilities';
 import DiveInputForm from './components/DiveInputForm';
 import SurfaceIntervalForm from './components/SurfaceIntervalForm';
-import { Container, Grid, Message, Header, List, Segment, Modal, Table } from 'semantic-ui-react';
+import { Container, Grid, Message, Header, List, Segment, Modal, Table, Popup } from 'semantic-ui-react';
 import { defaultNDLs, table3 } from './api/PadiTables';
 import Swal from 'sweetalert2';
 
@@ -176,12 +176,25 @@ class App extends React.Component {
             cells.push(
                 <React.Fragment key={i}>
                     {numberOfDives > 0 ?
-                          <Table.Row>
-                          <Table.Cell>{i + 1}</Table.Cell>
-                          <Table.Cell>{dives[i]["DEPTH"]} meters</Table.Cell>
-                          <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
-                          <Table.Cell>{dives[i]["NDL"]} minutes</Table.Cell>
-                          </Table.Row>
+                      <React.Fragment>
+                        {(dives[i]['DEPTH'] >= 30 || isSafetyStopRequired(dives[i]['DEPTH'], dives[i]['TIME'])) ?
+                            <Popup content='Safety Stop REQUIRED' position='left center' basic trigger={
+                              <Table.Row error>
+                              <Table.Cell>{i + 1}</Table.Cell>
+                              <Table.Cell>{dives[i]["DEPTH"]} meters</Table.Cell>
+                              <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
+                              <Table.Cell>{dives[i]["NDL"]} minutes</Table.Cell>
+                            </Table.Row>
+                            }/>
+                            :
+                            <Table.Row>
+                              <Table.Cell>{i + 1}</Table.Cell>
+                              <Table.Cell>{dives[i]["DEPTH"]} meters</Table.Cell>
+                              <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
+                              <Table.Cell>{dives[i]["NDL"]} minutes</Table.Cell>
+                            </Table.Row>
+                        }
+                      </React.Fragment>
                     : ' '}
                 </React.Fragment>
             )
