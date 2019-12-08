@@ -7,15 +7,20 @@ import { defaultNDLs } from '../api/PadiTables';
 class SafetyStopIndicator extends React.Component {
   render() {
     const { index, depth, time, isNegative } = this.props;
+
+    // Since arrays start at 0, first element is called "0" if we access it directly. This function increments that. ONLY for
+    // UI purposes, this should not be used for any functionality as it will mess up the logic very badly.
+    const incrementIndex = (index) => index + 1;
+
     return (
         <React.Fragment>
           {isNegative ?
               <Message negative={true}>
-                <Message.Header>SAFETY STOP REQUIRED AFTER DIVE #{index}</Message.Header>
+                <Message.Header>SAFETY STOP REQUIRED AFTER DIVE #{incrementIndex(index)}</Message.Header>
                 Safety stops are REQUIRED for dive depths of 30 meters or deeper OR if the pressure group
                 for the dive is within three pressure groups of its no decompression limit.
                 <List bulleted={true}>
-                  <List.Header>Dive #{index} Statistics</List.Header>
+                  <List.Header>Dive #{incrementIndex(index)} Statistics</List.Header>
                   <List.Item>Depth: {depth} meters</List.Item>
                   <List.Item>
                     Pressure Group Achieved: {getPressureGroup(depth, time)}
@@ -27,7 +32,7 @@ class SafetyStopIndicator extends React.Component {
               </Message>
               :
               <Message warning={true}>
-                <Message.Header>Safety Stop Recommended after Dive #{index}</Message.Header>
+                <Message.Header>Safety Stop Recommended after Dive #{incrementIndex(index)}</Message.Header>
                 A safety stop is recommended 5 meters below surface for 3 to 5 minutes before surfacing at
                 the end of all dives.
               </Message>}
