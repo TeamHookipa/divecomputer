@@ -8,6 +8,7 @@ class DiveInputForm extends React.Component {
     return (
         <React.Fragment>
           <Form onSubmit={(event, data) => handleSubmit(event, index)}>
+            <Form.Group widths='equal'>
             <Form.Input
                 placeholder={'Depth (meters)'}
                 required={true}
@@ -18,7 +19,8 @@ class DiveInputForm extends React.Component {
                 required={true}
                 onChange={(event, value) => handleTimeChange(event, value, index)}
             />
-            <Form.Button color={`black`} content={`Set Dive #${index}`}/>
+            </Form.Group>
+            <Form.Button color={`black`} content={`Set Dive #${index + 1}`}/>
           </Form>
         </React.Fragment>
     );

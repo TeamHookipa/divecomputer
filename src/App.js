@@ -9,7 +9,7 @@ import {
 } from './api/Utilities';
 import DiveInputForm from './components/DiveInputForm';
 import SurfaceIntervalForm from './components/SurfaceIntervalForm';
-import { Container, Grid, Message, Header, List } from 'semantic-ui-react';
+import { Container, Grid, Message, Header, List, Segment } from 'semantic-ui-react';
 import { defaultNDLs, table3 } from './api/PadiTables';
 import Swal from 'sweetalert2';
 
@@ -116,7 +116,7 @@ class App extends React.Component {
         title: 'No Decompression Limit Exceeded',
         icon: 'error',
         type: 'error',
-        text: `Your TIME input of ${time} minutes for Dive ${index} has exceeded the No Decompression Limit of ${ndl} minutes!`,
+        text: `Your TIME input of ${time} minutes for Dive ${index + 1} has exceeded the No Decompression Limit of ${ndl} minutes!`,
         allowOutsideClick: false,
         allowEscapeKey: false,
         allowEnterKey: false,
@@ -159,8 +159,9 @@ class App extends React.Component {
       for (let i = 0; i < numberOfDives; i++) {
         forms.push(
             <React.Fragment key={i}>
+              <Grid.Row>
               <Grid.Column>
-                <Header>Dive #{i}</Header>
+                <Header>Dive #{i + 1}</Header>
                 {i === 0 ?
                     <DiveInputForm index={i} dives={dives}
                                    handleDepthChange={this.changeDepthInput}
@@ -191,11 +192,11 @@ class App extends React.Component {
                       {(dives[i]['DEPTH'] >= 30 || isSafetyStopRequired(dives[i]['DEPTH'], dives[i]['TIME'])) ?
                           // TODO: Move to its own component
                           <Message negative={true}>
-                            <Message.Header>SAFETY STOP REQUIRED AFTER DIVE #{i}</Message.Header>
+                            <Message.Header>SAFETY STOP REQUIRED AFTER DIVE #{i + 1}</Message.Header>
                             Safety stops are REQUIRED for dive depths of 30 meters or deeper OR if the pressure group
                             for the dive is within three pressure groups of its no decompression limit.
                             <List bulleted={true}>
-                              <List.Header>Dive #{i} Statistics</List.Header>
+                              <List.Header>Dive #{i + 1} Statistics</List.Header>
                               <List.Item>Depth: {dives[i]['DEPTH']} meters</List.Item>
                               <List.Item>
                                 Pressure Group Achieved: {getPressureGroup(dives[i]['DEPTH'], dives[i]['TIME'])}
@@ -208,13 +209,14 @@ class App extends React.Component {
                           </Message>
                           :
                           <Message warning={true}>
-                            <Message.Header>Safety Stop Recommended after Dive #{i}</Message.Header>
+                            <Message.Header>Safety Stop Recommended after Dive #{i + 1}</Message.Header>
                             A safety stop is recommended 5 meters below surface for 3 to 5 minutes before surfacing at
                             the end of all dives.
                           </Message>
                       }
                     </React.Fragment> : ''}
               </Grid.Column>
+              </Grid.Row>
             </React.Fragment>
         );
       }
@@ -235,9 +237,11 @@ class App extends React.Component {
                 // TODO: Show current pressure group
                 <React.Fragment>
                   {/* # of Columns: # of dives + # of surface interval columns */}
-                  <Grid columns={numberOfDives + (numberOfDives - 1)}>
+                  <Segment style={{overflow:'scroll', maxHeight: 750, background: '#00bfff' }}>
+                  <Grid columns={2}>
                     {renderDiveColumns()}
                   </Grid>
+                  </Segment>
                 </React.Fragment> : ''
             }
           </Container>
