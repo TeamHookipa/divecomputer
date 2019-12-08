@@ -1,6 +1,7 @@
 import * as React from 'react';
 import './App.css';
 import {
+  getMinimumSurfaceInterval,
   getNearestDepth,
   getNearestTime,
   getPressureGroup,
@@ -58,6 +59,7 @@ class App extends React.Component {
         for (let i = 0; i < this.state.numberOfDives; i++) {
           this.setState(prevState => ({ dives: [...prevState.dives, initialDive] }));
         }
+        document.getElementById("numberOfDivesInput").style.display = "none";
       }
   };
 
@@ -93,7 +95,6 @@ class App extends React.Component {
 
   setDiveInput = (event, index) => {
     event.preventDefault();
-    const { intervalInputs } = this.state;
     let dives = [...this.state.dives];
     const dive = dives[index];
     const depthInput = dive["DEPTH"];
@@ -101,15 +102,8 @@ class App extends React.Component {
     const depth = getNearestDepth(depthInput);
     const time = getNearestTime(depthInput, timeInput);
     let ndl;
-    if (index === 0) {
+    if (index === 0) { // Only in the first dive we calculate the NDL here rather than in setIntervalInput()
       ndl = defaultNDLs[depth];
-    } else {
-      const intervalInput = intervalInputs[index - 1]['VALUE'];
-      const startPressureGroup = dives[index - 1]['PG'];
-      const pressureGroupFromTableTwo = getPressureGroupForTableTwo(startPressureGroup, intervalInput);
-      const rnt = table3[depth][pressureGroupFromTableTwo][0]; // Residual Nitrogen Time
-      const andl = table3[depth][pressureGroupFromTableTwo][1]; // Adjusted No Decompression Limit
-      ndl = andl;
     }
     if (time > ndl) {
       Swal.fire({
@@ -123,31 +117,67 @@ class App extends React.Component {
       });
       return false;
     }
+    // In any repetitive dive, we make sure that they have a valid surface interval first (handled in setIntervalInput())
+    // before they are allowed to input the next dives.
+    let inputSetFlag = false;
+    if (index === 0) inputSetFlag = true; // Therefore only the first dive can bypass this rule
     dives[index] = {
       'DEPTH': depth,
       'TIME': time,
       'NDL': ndl,
-      'INPUTSET': true,
+      'INPUTSET': inputSetFlag,
     };
     this.setState({ dives });
   };
 
   setIntervalInput = (event, index) => {
     event.preventDefault();
+    // Check minimum surface interval is valid first
+    let dives = [...this.state.dives];
+    const prevDive = dives[index];
+    const prevDepth = prevDive["DEPTH"];
+    const prevTime = prevDive["TIME"];
+    const pressureGroupOfPrevDive = getPressureGroup(prevDepth, prevTime);
+    const nextDepth = dives[index + 1]['DEPTH'];
+    const nextTime = dives[index + 1]['TIME'];
+    const minSurfaceInterval = getMinimumSurfaceInterval(pressureGroupOfPrevDive, nextDepth, nextTime);
     let intervalInputs = [...this.state.intervalInputs];
+    if (intervalInputs[index]['VALUE'] < minSurfaceInterval) {
+      Swal.fire({
+        title: 'Minimum Surface Interval Required',
+        icon: 'error',
+        type: 'error',
+        text: `In order to do Dive #${index + 1} of ${nextDepth} meters and ${nextTime} minutes, Surface Interval ${index} must be at least ${minSurfaceInterval} minutes `,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        allowEnterKey: false,
+      });
+      return false;
+    }
+    // If valid,
+    // * Update the state to set the surface intervals
     intervalInputs[index] = {
       ...intervalInputs[index],
       'INPUTSET': true,
     };
-    let dives = [...this.state.dives];
-    const depth = dives[index]["DEPTH"];
-    const time = dives[index]["TIME"];
-    const pressureGroup = getPressureGroup(depth, time);
+    // * Add a pressure group 'PG' key-value pair for the previous dive
     dives[index] = {
       ...dives[index],
-      'PG': pressureGroup,
+      'PG': pressureGroupOfPrevDive,
     };
     this.setState({ dives, intervalInputs });
+    // * Calculate the RNT and ANDL for the next dive
+    const intervalInput = intervalInputs[index]['VALUE'];
+    const startPressureGroup = dives[index]['PG'];
+    const pressureGroupFromTableTwo = getPressureGroupForTableTwo(startPressureGroup, intervalInput);
+    const rnt = table3[nextDepth][pressureGroupFromTableTwo][0]; // Residual Nitrogen Time
+    const andl = table3[nextDepth][pressureGroupFromTableTwo][1]; // Adjusted No Decompression Limit
+    // * Set the NDL and INPUTSET for the next dive
+    dives[index + 1] = {
+      ...dives[index + 1],
+      'NDL': andl,
+      'INPUTSET': true,
+    }
   };
 
   render() {
@@ -167,7 +197,7 @@ class App extends React.Component {
                                    handleTimeChange={this.changeTimeInput}
                                    handleSubmit={this.setDiveInput}/>
                     :
-                    (dives[i - 1] !== undefined && dives[i - 1]['INPUTSET'] && intervalInputs[i - 1] !== undefined && intervalInputs[i - 1]['INPUTSET']) ?
+                    (dives[i - 1] !== undefined && dives[i - 1]['INPUTSET']) ?
                         <DiveInputForm index={i} dives={dives}
                                        handleDepthChange={this.changeDepthInput}
                                        handleTimeChange={this.changeTimeInput}
@@ -226,10 +256,11 @@ class App extends React.Component {
           <Container className="App">
             <h1><b>DISCLAIMER: THIS CODE IS FOR PROTOTYPING PURPOSES ONLY, DO NOT USE TO PLAN FOR A REAL DIVE</b></h1>
 
-            <label htmlFor="numberOfDives"><h2># of Dives </h2></label>
-            <input type="number" id="numberOfDives" name="numberOfDives"/>
-            <button type="button" onClick={this.initializeNumberOfDives}>Plan Out Your Dive!</button>
-            <br/><br/>
+            <div id="numberOfDivesInput">
+              <label htmlFor="numberOfDives"><h2># of Dives </h2></label>
+              <input type="number" id="numberOfDives" name="numberOfDives"/>
+              <button type="button" onClick={this.initializeNumberOfDives}>Plan Out Your Dive!</button>
+            </div>
             {numberOfDives > 0 ?
                 // TODO: Rows of 6
                 // TODO: Show current pressure group
