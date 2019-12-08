@@ -53,10 +53,12 @@ class App extends React.Component {
         });
       } else {
         this.setState({ numberOfDives: numberOfDivesInputValue });
+        // This doesn't really work for whatever reason, but I just put it here to serve as a schema documentation for the dive object
         let initialDive = {
           'DEPTH': undefined,
           'TIME': undefined,
           'NDL': undefined,
+          'RNT': undefined,
           'INPUTSET': false,
           'PG': undefined,
         };
@@ -200,6 +202,7 @@ class App extends React.Component {
     dives[index + 1] = {
       ...dives[index + 1],
       'NDL': andl,
+      'RNT': rnt,
       'INPUTSET': true,
     };
     this.setState({ dives, intervalInputs });
@@ -236,7 +239,17 @@ class App extends React.Component {
                 ) ?
                     <Message>
                       <Message.Header>No Decompression Limit: </Message.Header>
-                      {dives[i].NDL} minutes
+                      {dives[i]['NDL']} minutes
+                      {i !== 0 ?
+                          <React.Fragment>
+                            <Message.Header>Total Bottom Time:</Message.Header>
+                            {dives[i]['RNT'] + dives[i]['TIME']} minutes
+                            <Message.Header>Residual Nitrogen Time:</Message.Header>
+                            {dives[i]['RNT']} minutes
+                            <Message.Header>Actual Bottom Time:</Message.Header>
+                            {dives[i]['TIME']} minutes
+                          </React.Fragment>
+                          : ''}
                     </Message> : ''}
               </Grid.Column>
 
