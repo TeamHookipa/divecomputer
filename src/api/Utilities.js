@@ -88,6 +88,7 @@ export const getMinimumSurfaceInterval = (prevPressureGroup, depth, time) => {
 // ########################################## //
 
 export const isSafetyStopRequired = (depth, time) => {
+  if (depth >= 30) return true;
   const pressureGroup = getPressureGroup(depth, time);
   const maxPressureGroup = getPressureGroup(depth, defaultNDLs[depth]);
   const asciiPG = pressureGroup.charCodeAt(0);
