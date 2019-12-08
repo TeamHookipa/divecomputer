@@ -10,7 +10,7 @@ import {
 } from './api/Utilities';
 import DiveInputForm from './components/DiveInputForm';
 import SurfaceIntervalForm from './components/SurfaceIntervalForm';
-import { Container, Grid, Message, Header } from 'semantic-ui-react';
+import { Container, Grid, Message, Header, Modal, Table, Popup } from 'semantic-ui-react';
 import { defaultNDLs, table3 } from './api/PadiTables';
 import Swal from 'sweetalert2';
 import SafetyStopIndicator from './components/SafetyStopIndicator';
@@ -22,6 +22,7 @@ class App extends React.Component {
     this.state = {
       numberOfDives: 0,
       numberOfDivesFlag: false,
+      divesPerRow: 3,
       dives: [],
       // Dive Object Schema:
       // 'DEPTH': Number,
@@ -60,20 +61,9 @@ class App extends React.Component {
         allowEscapeKey: false,
         allowEnterKey: false,
       });
-    } else
-      if (numberOfDives > 8) {
-        Swal.fire({
-          title: 'Invalid Number of Dives',
-          icon: 'error',
-          type: 'error',
-          text: 'More than 8 number of dives is not supported',
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-          allowEnterKey: false,
-        });
-      } else {
-        this.setState({ numberOfDives: numberOfDives });
-      }
+    } else {
+      this.setState({ numberOfDives: numberOfDives });
+    }
     document.getElementById("numberOfDivesInputForm").style.display = "none";
   };
 
@@ -152,8 +142,8 @@ class App extends React.Component {
           icon: 'error',
           type: 'error',
           html: `<p>Repetitive dives should be the same or a lesser depth than the dive preceding</p>
-                 <p>Dive #${index} Depth: ${depth} meters</p>
-                 <p>Dive #${index - 1} Depth: ${dives[index - 1]['DEPTH']}</p>`,
+                 <p>Dive #${this.incrementIndex(index)} Depth: ${depth} meters</p>
+                 <p>Dive #${this.incrementIndex(index - 1)} Depth: ${dives[index - 1]['DEPTH']}</p>`,
           allowOutsideClick: false,
           allowEscapeKey: false,
           allowEnterKey: false,
@@ -171,7 +161,7 @@ class App extends React.Component {
         title: 'No Decompression Limit Exceeded',
         icon: 'error',
         type: 'error',
-        text: `Your TIME input of ${time} minutes for Dive ${index} has exceeded the No Decompression Limit of ${ndl} minutes!`,
+        text: `Your TIME input of ${time} minutes for Dive ${this.incrementIndex(index + 1)} has exceeded the No Decompression Limit of ${ndl} minutes!`,
         allowOutsideClick: false,
         allowEscapeKey: false,
         allowEnterKey: false,
@@ -218,7 +208,7 @@ class App extends React.Component {
         title: 'Minimum Surface Interval Required',
         icon: 'error',
         type: 'error',
-        text: `In order to do Dive #${index + 1} of ${nextDepth} meters and ${nextTime} minutes, Surface Interval ${index} must be at least ${minSurfaceInterval} minutes `,
+        text: `In order to do Dive #${this.incrementIndex(index + 1)} of ${nextDepth} meters and ${nextTime} minutes, Surface Interval ${index} must be at least ${minSurfaceInterval} minutes `,
         allowOutsideClick: false,
         allowEscapeKey: false,
         allowEnterKey: false,
@@ -249,10 +239,10 @@ class App extends React.Component {
         title: 'No Decompression Limit Exceeded',
         icon: 'error',
         type: 'error',
-        html: `<p>Your total bottom time in Dive #${index + 1} of ${tbt} minutes exceeded the No Decompression Limit for Dive #${index + 1}</p>
-               <p>No Decompression Limit (for Dive #${index}): ${andl} minutes</p>
-               <p>Residual Nitrogen Time (from Dive #${index}): ${rnt} minutes</p>
-               <p>Actual Bottom Time (of Dive #${index + 1}): ${nextTime} minutes</p>`,
+        html: `<p>Your total bottom time in Dive #${this.incrementIndex(index + 1)} of ${tbt} minutes exceeded the No Decompression Limit for Dive #${this.incrementIndex(index + 1)}</p>
+               <p>No Decompression Limit (for Dive #${this.incrementIndex(index)}): ${andl} minutes</p>
+               <p>Residual Nitrogen Time (from Dive #${this.incrementIndex(index)}): ${rnt} minutes</p>
+               <p>Actual Bottom Time (of Dive #${this.incrementIndex(index + 1)}): ${nextTime} minutes</p>`,
         allowOutsideClick: false,
         allowEscapeKey: false,
         allowEnterKey: false,
@@ -274,16 +264,129 @@ class App extends React.Component {
   };
 
   render() {
-    const { numberOfDives, intervalInputs, numberOfDivesFlag } = this.state;
+    const { numberOfDives, divesPerRow, intervalInputs, numberOfDivesFlag } = this.state;
 
-    const renderDiveColumns = () => {
-      let forms = [];
+    const DiveOverviewTable = () => (
+        <Table celled>
+          <Table.Header>
+            <Table.Row>
+              <Table.HeaderCell>Dive #</Table.HeaderCell>
+              <Table.HeaderCell>Depth</Table.HeaderCell>
+              <Table.HeaderCell>Time</Table.HeaderCell>
+              <Table.HeaderCell>NDL</Table.HeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {renderDiveTable()}
+          </Table.Body>
+        </Table>
+    );
+
+    const renderDiveTable = () => {
+      let cells = [];
       const { numberOfDives, dives } = this.state;
       for (let i = 0; i < numberOfDives; i++) {
+        cells.push(
+            <React.Fragment key={i}>
+              {numberOfDives > 0 ?
+                  <React.Fragment>
+                    {(dives[i]['DEPTH'] >= 30 || isSafetyStopRequired(dives[i]['DEPTH'], dives[i]['TIME'])) ?
+                        <Popup content='Safety Stop REQUIRED' position='left center' basic trigger={
+                          <Table.Row error>
+                            <Table.Cell>{i + 1}</Table.Cell>
+                            <Table.Cell>{dives[i]["DEPTH"]} meters</Table.Cell>
+                            <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
+                            <Table.Cell>{dives[i]["NDL"]} minutes</Table.Cell>
+                          </Table.Row>
+                        }/>
+                        :
+                        <Table.Row>
+                          <Table.Cell>{i + 1}</Table.Cell>
+                          <Table.Cell>{dives[i]["DEPTH"]} meters</Table.Cell>
+                          <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
+                          <Table.Cell>{dives[i]["NDL"]} minutes</Table.Cell>
+                        </Table.Row>
+                    }
+                  </React.Fragment>
+                  : ' '}
+            </React.Fragment>
+        )
+      }
+      return cells;
+    };
+
+    const DiveOverviewModal = () => (
+        <Modal trigger={<button type="button">Dive Overview</button>} centered={false}>
+          <Modal.Header>Dive Overview</Modal.Header>
+          <Modal.Content>
+            <DiveOverviewTable/>
+          </Modal.Content>
+        </Modal>
+    );
+
+    const renderDiveGrids = () => {
+      let grids = [];
+      const { numberOfDives, numberOfDivesFlag, divesPerRow } = this.state;
+      const numberOfGrids = Math.ceil(numberOfDives / divesPerRow);
+      const multipleOfDivesPerRow = numberOfDives % divesPerRow === 0;
+      let index = -divesPerRow; // The index of all the dives need to be keep tracked and passed on to the next grid
+      // If the number of dives is a multiple of the dives per row setting, then it is guaranteed all the columns
+      // for each grid is filled properly
+      if (numberOfDivesFlag && multipleOfDivesPerRow) {
+        const surfaceIntervalsPerRow = divesPerRow - 1;
+        const numberOfColumns = divesPerRow + surfaceIntervalsPerRow + 1; // We add an extra column for the last surface interval of the row
+        for (let i = 0; i < numberOfGrids; i++) {
+          index = index + divesPerRow;
+          if (i !== (numberOfGrids - 1)) {
+            grids.push(
+                <Grid key={i} columns={numberOfColumns}>
+                  {renderDiveColumns(index, divesPerRow)}
+                </Grid>
+            )
+          } else {
+            grids.push(
+                <Grid key={i} columns={numberOfColumns - 1}>
+                  {renderDiveColumns(index, divesPerRow)}
+                </Grid>
+            )
+          }
+        }
+      } else
+        if (numberOfDivesFlag && !multipleOfDivesPerRow) {
+          for (let i = 0; i < numberOfGrids; i++) {
+            // We fill all the Grids that can have 4 dives first, which is all the grids except the last
+            index = index + divesPerRow;
+            if (i !== (numberOfGrids - 1)) {
+              const surfaceIntervalsPerRow = divesPerRow - 1;
+              const numberOfColumns = divesPerRow + surfaceIntervalsPerRow + 1;
+              grids.push(
+                  <Grid key={i} columns={numberOfColumns}>
+                    {renderDiveColumns(index, divesPerRow)}
+                  </Grid>
+              )
+            } else {
+              const remainingDives = numberOfDives % divesPerRow;
+              const surfaceIntervalsPerRow = remainingDives - 1;
+              const numberOfColumns = remainingDives + surfaceIntervalsPerRow;
+              grids.push(
+                  <Grid key={i} columns={numberOfColumns}>
+                    {renderDiveColumns(index, (numberOfDives % divesPerRow))}
+                  </Grid>
+              )
+            }
+          }
+        }
+      return grids;
+    };
+
+    const renderDiveColumns = (startingIndex, upperBound) => {
+      let forms = [];
+      const { numberOfDives, dives } = this.state;
+      for (let i = startingIndex; i < (startingIndex + upperBound); i++) {
         forms.push(
             <React.Fragment key={i}>
               <Grid.Column>
-                <Header>Dive #{i}</Header>
+                <Header>Dive #{this.incrementIndex(i)}</Header>
                 {i === 0 ?
                     <DiveInputForm index={i}
                                    handleDepthChange={this.changeDepthInput}
@@ -344,13 +447,20 @@ class App extends React.Component {
                      header={'DISCLAIMER: THIS CODE IS FOR PROTOTYPING PURPOSES ONLY, DO NOT USE TO PLAN FOR A REAL DIVE'}/>
             <NumberOfDivesInputForm handleNumberOfDiveChange={this.changeNumberOfDives}
                                     handleSubmit={this.setNumberOfDives}/>
+            {/*<DiveOverviewModal/>*/}
             {numberOfDivesFlag ?
                 <React.Fragment>
                   {/* # of Columns: # of dives + # of surface interval columns */}
-                  <Grid columns={numberOfDives + (numberOfDives - 1)}>
-                    {renderDiveColumns()}
-                  </Grid>
-                </React.Fragment> : ''}
+                  {numberOfDives > divesPerRow ?
+                      <React.Fragment>
+                        {renderDiveGrids()}
+                      </React.Fragment>
+                      :
+                      <Grid columns={numberOfDives + (numberOfDives - 1)}>
+                        {renderDiveColumns(0, numberOfDives)}
+                      </Grid>}
+                </React.Fragment> : ''
+            }
           </Container>
         </div>
     );

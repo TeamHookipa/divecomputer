@@ -89,6 +89,7 @@ export const getMinimumSurfaceInterval = (prevPressureGroup, depth, time) => {
 
 // ########################################## //
 
+// Return if a safety stop is required for the given depth and time
 export const isSafetyStopRequired = (depth, time) => {
   if (depth >= 30) return true;
   const pressureGroup = getPressureGroup(depth, time);
