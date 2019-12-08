@@ -21,5 +21,40 @@ it('Correctly computes and returns Pressure group', () => {
   expect(getPressureGroup(12,42)).toBe('I');
 });
 
+//Tests for parseTimeString
+//Checks if returns correct value for converting a format of HH:MM to minutes
+it('Correctly converts hours:minutes into minutes format', () => {
+  expect(parseTimeString("10:05")).toBe(65);
+});
 
+//Tests for getPressureGroupForTableTwo
+//Makes sure returns correct pressure group for table 2
+it('Correctly returns the second pressure group', () => {
+  expect(getPressureGroupForTableTwo('B',181)).toBe('A');
+});
+it('Correctly returns the second pressure group', () => {
+  expect(getPressureGroupForTableTwo('B',50)).toBe('A');
+});
+
+//Tests for getStartPressureGroupForMinimumSurfaceInterval
+//Checks to see if it calculates correct minimum surface Interval and returns correct group
+it('Correctly calculates the pressure group for a given minimum surface interval', () => {
+  expect(getStartPressureGroupForMinimumSurfaceInterval(20, 26)).toBe('K');
+});
+
+//Tests that getMinimumSurfaceInterval returns correct value
+it('Correctly calculates minimum surface interval', () => {
+  expect(getStartPressureGroupForMinimumSurfaceInterval('B',20,26)).toBe(0);
+});
+it('Correctly calculates minimum surface interval', () => {
+  expect(getStartPressureGroupForMinimumSurfaceInterval('L',20,26)).toBe(5);
+});
+
+//Tests if isSafetyStopRequired returns correct value
+it('Correctly calculates minimum surface interval', () => {
+  expect(isSafetyStopRequired(30, 100)).toBe(true);
+});
+it('Correctly calculates minimum surface interval', () => {
+  expect(isSafetyStopRequired(10, 5)).toBe(false);
+});
 
