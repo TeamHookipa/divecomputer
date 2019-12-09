@@ -51,16 +51,11 @@ it('Correctly calculates minimum surface interval', () => {
 });
 
 //Tests if isSafetyStopRequired returns correct value
-it('Correctly calculates minimum surface interval', () => {
+it('Correctly calculates that a safety stop is required', () => {
   expect(isSafetyStopRequired(30, 100)).toBe(true);
 });
-it('Correctly calculates minimum surface interval', () => {
+it('Correctly calculates that a safety stop is not required', () => {
   expect(isSafetyStopRequired(10, 5)).toBe(false);
 });
 
-//Tests App.js renders
-it('Correct outputs for given inputs', () => {
-
-  expect(setNumberOfDives(2)).toBe(2);
-});
 
