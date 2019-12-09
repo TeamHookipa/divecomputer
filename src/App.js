@@ -36,7 +36,6 @@ class App extends React.Component {
       oneHourMinSurfaceIntervalFlag: false,
       threeHourMinSurfaceIntervalFlag: false,
       disabled: true,
-      diveInputs: 0,
     }
   }
 
@@ -182,7 +181,7 @@ class App extends React.Component {
     };
     this.setState({ dives });
 
-    this.incrementDiveInput();
+    this.enableOverview();
   };
 
   setIntervalInput = (event, index) => {
@@ -267,8 +266,7 @@ class App extends React.Component {
     this.setState({ dives, intervalInputs });
   };
 
-  incrementDiveInput = () => {
-    this.setState({ diveInputs: this.state.diveInputs + 1});
+  enableOverview = () => {
     this.setState({ disabled: false});
   }
 
@@ -283,6 +281,9 @@ class App extends React.Component {
               <Table.HeaderCell>Depth</Table.HeaderCell>
               <Table.HeaderCell>Time</Table.HeaderCell>
               <Table.HeaderCell>NDL</Table.HeaderCell>
+              <Table.HeaderCell>ABT</Table.HeaderCell>
+              <Table.HeaderCell>RNT</Table.HeaderCell>
+              <Table.HeaderCell>TBT</Table.HeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -293,11 +294,11 @@ class App extends React.Component {
 
     const renderDiveTable = () => {
       let cells = [];
-      const { dives, diveInputs } = this.state;
-      for (let i = 0; i < diveInputs; i++) {
+      const { dives } = this.state;
+      for (let i = 0; i < dives.length; i++) {
         cells.push(
             <React.Fragment key={i}>
-              {diveInputs > 0 ?
+              {dives.length > 0 ?
                   <React.Fragment>
                     {(numberOfDives > 1 && (dives[i]['DEPTH'] >= 30 || isSafetyStopRequired(dives[i]['DEPTH'], dives[i]['TIME']))) ?
                         <Popup content='Safety Stop REQUIRED' position='left center' basic trigger={
@@ -306,6 +307,9 @@ class App extends React.Component {
                             <Table.Cell>{dives[i]["DEPTH"]} meters</Table.Cell>
                             <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
                             <Table.Cell>{dives[i]["NDL"]} minutes</Table.Cell>
+                            <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
+                            <Table.Cell>{(i !== 0 ? dives[i]["RNT"] : 0)} minutes</Table.Cell>
+                            <Table.Cell>{(i !== 0 ? dives[i]["TIME"] + dives[i]["RNT"] : dives[i]["TIME"])} minutes</Table.Cell>
                           </Table.Row>
                         }/>
                         :
@@ -314,6 +318,9 @@ class App extends React.Component {
                           <Table.Cell>{dives[i]["DEPTH"]} meters</Table.Cell>
                           <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
                           <Table.Cell>{dives[i]["NDL"]} minutes</Table.Cell>
+                          <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
+                          <Table.Cell>{(i !== 0 ? dives[i]["RNT"] : 0)} minutes</Table.Cell>
+                          <Table.Cell>{(i !== 0 ? dives[i]["TIME"] + dives[i]["RNT"] : dives[i]["TIME"])} minutes</Table.Cell>
                         </Table.Row>
                     }
                   </React.Fragment>
