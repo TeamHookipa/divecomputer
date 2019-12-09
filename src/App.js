@@ -10,7 +10,7 @@ import {
 } from './api/Utilities';
 import DiveInputForm from './components/DiveInputForm';
 import SurfaceIntervalForm from './components/SurfaceIntervalForm';
-import { Container, Grid, Message, Header, Modal, Table, Popup, Button } from 'semantic-ui-react';
+import { Container, Grid, Message, Header, Modal, Table, Popup, Button, Icon } from 'semantic-ui-react';
 import { defaultNDLs, table3 } from './api/PadiTables';
 import Swal from 'sweetalert2';
 import SafetyStopIndicator from './components/SafetyStopIndicator';
@@ -326,7 +326,7 @@ class App extends React.Component {
 
     const DiveOverviewModal = () => (
         <Modal trigger={<Button {...this.state} type="ui button" color="black">Dive Overview</Button>} centered={false}>
-          <Modal.Header>Dive Overview</Modal.Header>
+          <Modal.Header>Dive Overview <Popup content="Values include changed values, not actual inputs" trigger={<Icon name="attention"/>}/></Modal.Header>
           <Modal.Content>
             <DiveOverviewTable/>
           </Modal.Content>
