@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { getNearestDepth, getNearestTime, getPressureGroup, parseTimeString, getPressureGroupForTableTwo, getStartPressureGroupForMinimumSurfaceInterval, getMinimumSurfaceInterval, isSafetyStopRequired } from './api/Utilities';
-
+import App from './'
 
 //Tests getNearestDepth Function
 //Checks it returns correct result and checks it returns a int
@@ -56,5 +56,11 @@ it('Correctly calculates minimum surface interval', () => {
 });
 it('Correctly calculates minimum surface interval', () => {
   expect(isSafetyStopRequired(10, 5)).toBe(false);
+});
+
+//Tests App.js renders
+it('Correct outputs for given inputs', () => {
+
+  expect(setNumberOfDives(2)).toBe(2);
 });
 
