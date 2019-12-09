@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { getNearestDepth, getNearestTime, getPressureGroup, parseTimeString, getPressureGroupForTableTwo, getStartPressureGroupForMinimumSurfaceInterval, getMinimumSurfaceInterval, isSafetyStopRequired } from './api/Utilities';
-import App from './'
 
 //Tests getNearestDepth Function
 //Checks it returns correct result and checks it returns a int
