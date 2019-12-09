@@ -51,7 +51,12 @@ it('Correctly calculates minimum surface interval', () => {
 
 //Tests if isSafetyStopRequired returns correct value
 it('Correctly calculates that a safety stop is required', () => {
-  expect(isSafetyStopRequired(30, 100)).toBe(true);
+  // Depth of 30 meters or greater require safety stop
+  expect(isSafetyStopRequired(30, 15)).toBe(true);
+
+  // If the pressure group of a dive comes within 3 pressure groups of a no decompression limit
+  expect(getPressureGroup(10, 178)).toBe('X');
+  expect(isSafetyStopRequired(10, 178)).toBe(true);
 });
 it('Correctly calculates that a safety stop is not required', () => {
   expect(isSafetyStopRequired(10, 5)).toBe(false);
