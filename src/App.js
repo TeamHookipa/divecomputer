@@ -10,7 +10,7 @@ import {
 } from './api/Utilities';
 import DiveInputForm from './components/DiveInputForm';
 import SurfaceIntervalForm from './components/SurfaceIntervalForm';
-import { Container, Grid, Message, Header, Modal, Table, Popup } from 'semantic-ui-react';
+import { Container, Grid, Message, Header, Modal, Table, Popup, Button, Icon } from 'semantic-ui-react';
 import { defaultNDLs, table3 } from './api/PadiTables';
 import Swal from 'sweetalert2';
 import SafetyStopIndicator from './components/SafetyStopIndicator';
@@ -35,6 +35,7 @@ class App extends React.Component {
       // Multiple Dives Rule
       oneHourMinSurfaceIntervalFlag: false,
       threeHourMinSurfaceIntervalFlag: false,
+      disabled: true,
     }
   }
 
@@ -179,6 +180,8 @@ class App extends React.Component {
       'INPUTSET': inputSetFlag,
     };
     this.setState({ dives });
+
+    this.enableOverview();
   };
 
   setIntervalInput = (event, index) => {
@@ -263,6 +266,10 @@ class App extends React.Component {
     this.setState({ dives, intervalInputs });
   };
 
+  enableOverview = () => {
+    this.setState({ disabled: false});
+  }
+
   render() {
     const { numberOfDives, divesPerRow, intervalInputs, numberOfDivesFlag } = this.state;
 
@@ -274,6 +281,9 @@ class App extends React.Component {
               <Table.HeaderCell>Depth</Table.HeaderCell>
               <Table.HeaderCell>Time</Table.HeaderCell>
               <Table.HeaderCell>NDL</Table.HeaderCell>
+              <Table.HeaderCell>ABT</Table.HeaderCell>
+              <Table.HeaderCell>RNT</Table.HeaderCell>
+              <Table.HeaderCell>TBT</Table.HeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -284,19 +294,22 @@ class App extends React.Component {
 
     const renderDiveTable = () => {
       let cells = [];
-      const { numberOfDives, dives } = this.state;
-      for (let i = 0; i < numberOfDives; i++) {
+      const { dives } = this.state;
+      for (let i = 0; i < dives.length; i++) {
         cells.push(
             <React.Fragment key={i}>
-              {numberOfDives > 0 ?
+              {dives.length > 0 ?
                   <React.Fragment>
-                    {(dives[i]['DEPTH'] >= 30 || isSafetyStopRequired(dives[i]['DEPTH'], dives[i]['TIME'])) ?
+                    {(numberOfDives > 1 && (dives[i]['DEPTH'] >= 30 || isSafetyStopRequired(dives[i]['DEPTH'], dives[i]['TIME']))) ?
                         <Popup content='Safety Stop REQUIRED' position='left center' basic trigger={
                           <Table.Row error>
                             <Table.Cell>{i + 1}</Table.Cell>
                             <Table.Cell>{dives[i]["DEPTH"]} meters</Table.Cell>
                             <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
                             <Table.Cell>{dives[i]["NDL"]} minutes</Table.Cell>
+                            <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
+                            <Table.Cell>{(i !== 0 ? dives[i]["RNT"] : 0)} minutes</Table.Cell>
+                            <Table.Cell>{(i !== 0 ? dives[i]["TIME"] + dives[i]["RNT"] : dives[i]["TIME"])} minutes</Table.Cell>
                           </Table.Row>
                         }/>
                         :
@@ -305,6 +318,9 @@ class App extends React.Component {
                           <Table.Cell>{dives[i]["DEPTH"]} meters</Table.Cell>
                           <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
                           <Table.Cell>{dives[i]["NDL"]} minutes</Table.Cell>
+                          <Table.Cell>{dives[i]["TIME"]} minutes</Table.Cell>
+                          <Table.Cell>{(i !== 0 ? dives[i]["RNT"] : 0)} minutes</Table.Cell>
+                          <Table.Cell>{(i !== 0 ? dives[i]["TIME"] + dives[i]["RNT"] : dives[i]["TIME"])} minutes</Table.Cell>
                         </Table.Row>
                     }
                   </React.Fragment>
@@ -316,8 +332,8 @@ class App extends React.Component {
     };
 
     const DiveOverviewModal = () => (
-        <Modal trigger={<button type="button">Dive Overview</button>} centered={false}>
-          <Modal.Header>Dive Overview</Modal.Header>
+        <Modal trigger={<Button {...this.state} type="ui button" color="black">Dive Overview</Button>} centered={false}>
+          <Modal.Header>Dive Overview <Popup content="Values include changed values, not actual inputs" trigger={<Icon name="attention"/>}/></Modal.Header>
           <Modal.Content>
             <DiveOverviewTable/>
           </Modal.Content>
@@ -447,7 +463,9 @@ class App extends React.Component {
                      header={'DISCLAIMER: THIS CODE IS FOR PROTOTYPING PURPOSES ONLY, DO NOT USE TO PLAN FOR A REAL DIVE'}/>
             <NumberOfDivesInputForm handleNumberOfDiveChange={this.changeNumberOfDives}
                                     handleSubmit={this.setNumberOfDives}/>
-            {/*<DiveOverviewModal/>*/}
+            <br/><br/>
+            <DiveOverviewModal/>
+            <br/><br/>
             {numberOfDivesFlag ?
                 <React.Fragment>
                   {/* # of Columns: # of dives + # of surface interval columns */}
